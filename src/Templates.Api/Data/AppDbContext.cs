@@ -8,6 +8,7 @@ namespace Templates.Api.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<Template> Templates => Set<Template>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
