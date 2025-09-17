@@ -1,10 +1,10 @@
-using Templates.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using Templates.Api.Services;
+using Templates.Api.Configuration;
+using Templates.Api.Data;
+using Templates.Api.Profiles;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -12,8 +12,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.RegisterServices();
+
+builder.Services.AddAutoMapper(typeof(MappingProfiles));
 
 var app = builder.Build();
 
