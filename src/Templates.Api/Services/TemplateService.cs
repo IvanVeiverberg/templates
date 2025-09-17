@@ -1,58 +1,81 @@
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Scriban;
+using Scriban.Runtime;
+using Scriban.Syntax;
 using Templates.Api.Data;
+using Templates.Api.DTOs;
 using Templates.Api.Entities;
+using Templates.Api.Services;
+using Templates.Api.Utils;
+using Entities = Templates.Api.Entities;
+using ScribanTemplate = Scriban.Template;
 
-namespace Templates.Api.Services
+public class TemplateService : ITemplateService
 {
-    public class TemplateService : ITemplateService
+    private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
+
+    public TemplateService(AppDbContext context, IMapper mapper)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+        _mapper = mapper;
+    }
 
-        public TemplateService(AppDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<Entities.Template?> GetTemplateByIdAsync(int id) => await _context.Templates.FindAsync(id);
 
-        public async Task<Template?> GetTemplateByIdAsync(int id)
-        {
-            return await _context.Templates.FindAsync(id);
-        }
+    public async Task<Entities.Template> CreateTemplateAsync(TemplateDto templateDto)
+    {
+        var template = _mapper.Map<Entities.Template>(templateDto);
+        _context.Templates.Add(template);
+        await _context.SaveChangesAsync();
+        return template;
+    }
 
-        public async Task<Template> CreateTemplateAsync(Template template)
-        {
-            _context.Templates.Add(template);
-            await _context.SaveChangesAsync();
-            return template;
-        }
+    public async Task<bool> UpdateTemplateAsync(int id, TemplateDto templateDto)
+    {
+        var template = await _context.Templates.FindAsync(id);
+        if (template == null) return false;
 
-        public async Task<bool> UpdateTemplateAsync(Template template)
-        {
-            if (!_context.Templates.Any(u => u.Id == template.Id)) return false;
+        _mapper.Map(templateDto, template);
+        _context.Entry(template).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
-            _context.Entry(template).State = EntityState.Modified;
+    public async Task<bool> DeleteTemplateAsync(int id)
+    {
+        var template = await _context.Templates.FindAsync(id);
+        if (template == null) return false;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Templates.Any(u => u.Id == template.Id))
-                    return false;
+        _context.Templates.Remove(template);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
-                throw;
-            }
-        }
+    public async Task<string?> CompileTemplateAsync(int templateId, int userId)
+    {
+        var template = await _context.Templates.FindAsync(templateId);
+        var user = await _context.Users.FindAsync(userId);
+        if (template == null || user == null) return null;
 
-        public async Task<bool> DeleteTemplateAsync(int id)
-        {
-            var template = await _context.Templates.FindAsync(id);
-            if (template == null) return false;
+        var userDto = _mapper.Map<UserDto>(user);
 
-            _context.Templates.Remove(template);
-            await _context.SaveChangesAsync();
-            return true;
-        }
+        var compiled = TemplateRenderer.RenderTemplate(template.Value, new { user = userDto });
+        return compiled;
+    }
+
+    public async Task<string?> CompileHtmlForUserAsync(int templateId, int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        var compiled = await CompileTemplateAsync(templateId, userId);
+        if (user == null || compiled == null) return null;
+
+        var style = string.IsNullOrWhiteSpace(user.CustomStyle)
+            ? Defaults.DefaultStyle
+            : user.CustomStyle;
+
+        var html = TemplateRenderer.RenderTemplate(Defaults.HtmlTemplate, new { style = style, content = compiled });
+        return html;
     }
 }

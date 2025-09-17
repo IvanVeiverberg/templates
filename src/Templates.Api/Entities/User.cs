@@ -29,5 +29,7 @@ namespace Templates.Api.Entities
 
         [MaxLength(20)]
         public string HouseNumber { get; set; } = string.Empty;
+        
+        public string CustomStyle { get; set; } = string.Empty;
     }
 }
