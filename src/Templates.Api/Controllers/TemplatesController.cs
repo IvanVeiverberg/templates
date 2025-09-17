@@ -66,7 +66,7 @@ public class TemplatesController : ControllerBase
             var html = await _templateService.CompileHtmlForUserAsync(id, userId);
             return html == null ? NotFound("Template or User not found.") : Content(html, "text/html");
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
         }

@@ -1,15 +1,10 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Scriban;
-using Scriban.Runtime;
-using Scriban.Syntax;
 using Templates.Api.Data;
 using Templates.Api.DTOs;
-using Templates.Api.Entities;
 using Templates.Api.Services;
 using Templates.Api.Utils;
 using Entities = Templates.Api.Entities;
-using ScribanTemplate = Scriban.Template;
 
 public class TemplateService : ITemplateService
 {
